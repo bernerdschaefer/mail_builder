@@ -24,6 +24,7 @@ spec = Gem::Specification.new do |s|
   s.platform = Gem::Platform::RUBY
   s.require_path = 'lib'
   s.files = %w(Rakefile) + Dir.glob("lib/**/*")
+  s.add_dependency 'mime-types'
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|

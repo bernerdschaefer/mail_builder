@@ -1,3 +1,4 @@
+#!/usr/bin/env ruby
 require 'rubygems'
 require 'pathname'
 require Pathname(__FILE__).dirname.parent + 'lib/mail_builder'
