@@ -20,6 +20,8 @@ class MailBuilder
   ##
   BOUNDARY_CHARS = ((39..58).to_a + (65..90).to_a + (97..122).to_a).map { |_| _.chr }.freeze
 
+  ENVELOPE_CHARS = BOUNDARY_CHARS - ["+"]
+
   CHARSET = 'utf-8'.freeze
 
   # Printable characters which RFC 2047 says must be escaped.
@@ -59,10 +61,7 @@ class MailBuilder
   end
 
   def envelope_id
-    @envelope_id ||= begin
-      envelope_chars = BOUNDARY_CHARS - %w(+)
-      (1..25).to_a.map { envelope_chars[envelope_chars.size] }.join
-    end
+    @envelope_id ||= (1..25).to_a.map { ENVELOPE_CHARS[rand(ENVELOPE_CHARS.size)] }.join
   end
 
   ##
