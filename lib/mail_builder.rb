@@ -7,6 +7,32 @@ require 'enumerator' unless ''.respond_to?(:enum_for)
 require 'rubygems'
 require 'mime/types'
 
+require 'rubygems'
+require 'mail_builder'
+
+##
+# MailBuilder is a library for building RFC compliant MIME messages,
+# with support for text and HTML emails, as well as attachments.
+# 
+# Basic Usage:
+# 
+#   mail = MailBuilder.new
+#   mail.to = "joe@example.com"
+#   mail.text = "Body"
+#   
+#   sendmail = IO.popen("#{`which sendmail`.chomp} -i -t", "w+")
+#   sendmail.puts mail
+#   sendmail.close
+#   
+#   # or
+#   
+#   require 'net/smtp'
+#   
+#   Net::SMTP.start("smtp.address.com", 25) do |smtp|
+#     smtp.send_message(mail.to_s, mail.from, mail.to)
+#   end
+# 
+##
 class MailBuilder
   require Pathname(__FILE__).dirname + 'mail_builder/attachment'
 
@@ -20,11 +46,16 @@ class MailBuilder
   ##
   BOUNDARY_CHARS = ((39..58).to_a + (65..90).to_a + (97..122).to_a).map { |_| _.chr }.freeze
 
+  ##
+  # Valid characters for an envelope_id
+  ##
   ENVELOPE_CHARS = BOUNDARY_CHARS - ["+"]
 
   CHARSET = 'utf-8'.freeze
 
+  ##
   # Printable characters which RFC 2047 says must be escaped.
+  ##
   RFC2047_REPLACEMENTS = [
     ['?', '=%X' % ??],
     ['_', '=%X' % ?_],
@@ -32,8 +63,18 @@ class MailBuilder
     [/=$/, '']
   ].freeze
 
-  attr_accessor :html, :text, :envelope_id
+  attr_accessor :html, :text
+  attr_reader :headers
 
+  ##
+  # Accepts an options hash, setting text and html if provided, and
+  # setting any provided headers.
+  # 
+  #   mailer = MailBuilder.new(:text => "Text", :to => "admin@site.com", "X-Priority" => 1)
+  #   mailer.text # => "Text"
+  #   mailer.to # => "admin@site.com"
+  #   mailer.get_header("X-Priority") # => 1
+  ##
   def initialize(options = {})
     @headers = []
     @attachments = []
@@ -43,10 +84,24 @@ class MailBuilder
     parse_options(options)
   end
 
+  ##
+  # Adds a header value to the mailer's headers, without removing
+  # previous values.
+  # 
+  #   mailer.add_header("From", "admin@example.com")
+  #   mailer.add_header("From", "john@example.com")
+  #   
+  #   mailer.headers # => [["From", "admin@example.com"], ["From", "admin@example.com"]]
+  ##
   def add_header(key, value)
     @headers << [key.to_s, value]
   end
 
+  ##
+  # Retrieves a value from the mailer's headers.
+  # 
+  #   mailer.get_header("to") # => "admin@example.com"
+  ##
   def get_header(key)
     @headers.detect { |k, v| return v if k == key }
   end
@@ -55,11 +110,24 @@ class MailBuilder
     @headers.reject! { |k,| k == key }
   end
 
+  ##
+  # Adds a header value to the mailer's headers, replacing previous values.
+  # 
+  #   mailer.add_header("From", "admin@example.com")
+  #   mailer.set_header("From", "john@example.com")
+  #   
+  #   mailer.headers # => [["From", "admin@example.com"]]
+  ##
   def set_header(key, value)
     remove_header(key)
     add_header(key, value)
   end
 
+  ##
+  # Returns the envelope id for this mailer. The mail spec's ENV_ID is
+  # used to provide a unique identifier that follows an email through it's
+  # various states -- included bounces -- allowing it to be tracked.
+  ##
   def envelope_id
     @envelope_id ||= (1..25).to_a.map { ENVELOPE_CHARS[rand(ENVELOPE_CHARS.size)] }.join
   end
@@ -77,12 +145,32 @@ class MailBuilder
     end
   end
 
+  ##
+  # Wrapper for attach_as, setting the attachment filename to the file's
+  # basename.
+  # 
+  #   mailer.attach "some/file.pdf"
+  ##
   def attach(file, type = nil, headers = nil)
     file = Pathname(file)
 
     attach_as(file, file.basename, type, headers)
   end
 
+  ##
+  # Adds an Attachment to the email.
+  # 
+  # If file is an IO or File object, it's contents will be read immediately, in case
+  # the mail will be delivered to an external service without access to the object.
+  # Otherwise, the attached file's content will be read when the message is built.
+  # 
+  # If no type is provided, the MIME::Types library will be used to find a suitable
+  # content type.
+  # 
+  #   mailer.attach "account.html"
+  #   mailer.attach_as StringIO.new("test"), "account.txt"
+  # 
+  ##
   def attach_as(file, name, type = nil, headers = nil)
     @attachments << Attachment.new(file, name, type, headers)
   end
@@ -95,6 +183,15 @@ class MailBuilder
     @attachments.any?
   end
 
+  ##
+  # Builds the full email message suitable to be passed to Sendmail, Net::SMTP, etc.
+  # 
+  # It sets the Mail-From header (used for tracking emails), date, and message id,
+  # and then assembles the headers, body, and attachments.
+  # 
+  # All expensive operations -- generating boundaries, rendering views, reading
+  # attached files -- are delayed until this method is called.
+  ##
   def build
     set_header("Mail-From", "#{ENV["USER"]}@localhost ENVID=#{envelope_id}")
     set_header("Date", Time.now.rfc2822)

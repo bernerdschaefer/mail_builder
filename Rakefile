@@ -9,6 +9,16 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
+task :rdoc do
+  sh 'rm -r doc' if File.directory?('doc')
+  begin
+    sh 'sdoc --line-numbers --inline-source --main "README.rdoc" --title "MailBuilder Documentation" README.rdoc lib'
+  rescue
+    puts "sdoc not installed:"
+    puts "  gem install voloko-sdoc --source http://gems.github.com"
+  end
+end
+
 require "rake/gempackagetask"
 
 NAME = "mail_builder"
