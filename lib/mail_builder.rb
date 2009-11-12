@@ -8,7 +8,6 @@ require 'rubygems'
 require 'mime/types'
 
 require 'rubygems'
-require 'mail_builder'
 
 ##
 # MailBuilder is a library for building RFC compliant MIME messages,
@@ -64,7 +63,7 @@ class MailBuilder
   ].freeze
 
   attr_accessor :html, :text
-  attr_reader :headers
+  attr_reader :headers, :attachments
 
   ##
   # Accepts an options hash, setting text and html if provided, and
@@ -105,6 +104,7 @@ class MailBuilder
   def get_header(key)
     @headers.detect { |k, v| return v if k == key }
   end
+  alias [] get_header
 
   def remove_header(key)
     @headers.reject! { |k,| k == key }
@@ -122,11 +122,12 @@ class MailBuilder
     remove_header(key)
     add_header(key, value)
   end
+  alias []= set_header
 
   ##
   # Returns the envelope id for this mailer. The mail spec's ENV_ID is
   # used to provide a unique identifier that follows an email through it's
-  # various states -- included bounces -- allowing it to be tracked.
+  # various states -- including bounces -- allowing it to be tracked.
   ##
   def envelope_id
     @envelope_id ||= (1..25).to_a.map { ENVELOPE_CHARS[rand(ENVELOPE_CHARS.size)] }.join
@@ -225,7 +226,7 @@ class MailBuilder
   end
 
   def build_body
-    return @text unless multipart?
+    return @text.to_s unless multipart?
 
     body = []
     body << "This is a multi-part message in MIME format."
@@ -318,6 +319,6 @@ class MailBuilder
   end
 
   def rfc2045_encode(text)
-    [text].pack('M').gsub("\n", "\r\n").chomp.gsub(/=$/, '')
+    [text].pack('M').gsub("\n", "\r\n").chomp("=\r\n")
   end
 end

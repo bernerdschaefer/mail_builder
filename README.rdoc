@@ -31,8 +31,8 @@ One of the key advantages to using MailBuilder over other libraries
 reading attached files, etc. - are delayed until the physical message
 is built (by calling build or to_s).
 
-This gives you the freedom to generate many thousands of emails at
-almost with almost no time-cost. The emails could then be passed to some
+This gives you the freedom to generate many thousands of emails
+with almost no time-cost. The emails could then be passed to some
 external system - DRb, database - for final delivery.
 
   10_000.times do

@@ -28,7 +28,7 @@ class MailBuilder
     end
 
     def inspect
-      "#<Wheels::Mail::Attachment @file=#{@file.inspect}> @name=#{@name.inspect} @type=#{@type.inspect} @headers=#{@headers.inspect}"
+      "#<MailBuilder::Attachment @file=#{@file.inspect}> @name=#{@name.inspect} @type=#{@type.inspect} @headers=#{@headers.inspect}"
     end
 
   end

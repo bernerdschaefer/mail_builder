@@ -28,6 +28,10 @@ class MailBuilderTest < Test::Unit::TestCase
     assert_equal("=?utf-8?Q?=C3=A4=C3=A4=C3=A4=C3=B6=C3=B6=C3=B6?=", mailer.rfc2047_encode("\303\244\303\244\303\244\303\266\303\266\303\266"))
   end
 
+  def test_empty_mailer_throws_no_errors
+    assert_nothing_raised { mailer.to_s }
+  end
+
   def mailer(options = {})
     MailBuilder.new(options)
   end
