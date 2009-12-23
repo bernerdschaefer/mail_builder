@@ -6,6 +6,7 @@ require 'enumerator' unless ''.respond_to?(:enum_for)
 
 require 'rubygems'
 require 'mime/types'
+require 'uuidtools'
 
 require 'rubygems'
 
@@ -44,11 +45,6 @@ class MailBuilder
   # See 7.2.1, http://www.w3.org/Protocols/rfc1341/7_2_Multipart.html
   ##
   BOUNDARY_CHARS = ((39..58).to_a + (65..90).to_a + (97..122).to_a).map { |_| _.chr }.freeze
-
-  ##
-  # Valid characters for an envelope_id
-  ##
-  ENVELOPE_CHARS = BOUNDARY_CHARS - ["+"]
 
   CHARSET = 'utf-8'.freeze
 
@@ -130,7 +126,7 @@ class MailBuilder
   # various states -- including bounces -- allowing it to be tracked.
   ##
   def envelope_id
-    @envelope_id ||= (1..25).to_a.map { ENVELOPE_CHARS[rand(ENVELOPE_CHARS.size)] }.join
+    @envelope_id ||= UUIDTools::UUID.random_create.to_s
   end
 
   ##

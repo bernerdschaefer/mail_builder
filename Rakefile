@@ -24,7 +24,7 @@ require "rake/gempackagetask"
 
 NAME = "mail_builder"
 SUMMARY = "MailBuilder is a simple library for building RFC compliant MIME emails."
-GEM_VERSION = "0.2"
+GEM_VERSION = "0.3"
 
 spec = Gem::Specification.new do |s|
   s.name = NAME
@@ -37,6 +37,7 @@ spec = Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.files = %w(Rakefile) + Dir.glob("lib/**/*")
   s.add_dependency 'mime-types'
+  s.add_dependency 'uuidtools'
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
